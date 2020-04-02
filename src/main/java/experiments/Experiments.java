@@ -14,7 +14,7 @@
  */
 package experiments;
 
-import de.bwaldvogel.liblinear.Train;
+
 import machine_learning.classifiers.SaveEachParameter;
 import machine_learning.classifiers.tuned.TunedRandomForest;
 import experiments.data.DatasetLists;
@@ -389,7 +389,7 @@ public class Experiments {
                 //Location of data set
                 settings[0] = "-dp=F:/University Files/Project/UCIContinuous/";//Where to get data
                 settings[1] = "-rp=F:/University Files/Project/Result/";//Where to write results
-                settings[2] = "-gtf=false"; //Whether to generate train files or not
+                settings[2] = "-gtf=true"; //Whether to generate train files or not
                 settings[3] = "-cn=C45"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
                 System.out.println("Manually set args:");
@@ -536,7 +536,7 @@ public class Experiments {
     public static ClassifierResults[] runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
 
         //if this is a parameter split run, train file name is defined by this
-        //otherwise generally if the classifier wants to save parameter info itnerally, set that up here too
+        //otherwise generally if the classifier wants to save parameter info internally, set that up here too
         String trainFoldFilename = setupParameterSavingInfo(expSettings, classifier, trainSet, resultsPath);
         if (trainFoldFilename == null)
             //otherwise, defined by this as default

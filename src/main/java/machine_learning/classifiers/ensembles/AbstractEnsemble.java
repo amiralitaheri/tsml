@@ -109,24 +109,23 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
      * mass-experiments, intended for cases where user knows that dists are missing
      * (for BOSS, in this case) but still just wants to get ensemble results anyway... 
      */
-    protected boolean fillMissingDistsWithOneHotVectors; 
-    
+    protected boolean fillMissingDistsWithOneHotVectors;
+
     /**
      * if readResultsFilesDirectories.length == 1, all classifier's results read from that one path
      * else, resultsPaths.length must equal classifiers.length, with each index aligning
      * to the path to read the classifier's results from.
-     *
+     * <p>
      * e.g to read 2 classifiers from one directory, and another 2 from 2 different directories:
-     *
-     *     Index |  Paths  | Classifier
-     *     --------------------------
-     *       0   |  pathA  |   c1
-     *       1   |  pathA  |   c2
-     *       2   |  pathB  |   c3
-     *       3   |  pathC  |   c4
-     *
+     * <p>
+     * Index |  Paths  | Classifier
+     * --------------------------
+     * 0   |  pathA  |   c1
+     * 1   |  pathA  |   c2
+     * 2   |  pathB  |   c3
+     * 3   |  pathC  |   c4
      */
-    protected String readResultsFilesDirectories[];
+    protected String[] readResultsFilesDirectories;
 
     /**
      * if resultsWritePath is not set, will default to resultsPaths[0]
