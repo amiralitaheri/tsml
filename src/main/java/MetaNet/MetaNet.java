@@ -21,7 +21,10 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Scanner;
 
 import static experiments.Experiments.setupAndRunMultipleExperimentsThreaded;
 
@@ -30,7 +33,7 @@ public class MetaNet {
     String datesetName;
     int batchSize;
     int fold;
-    String resultPath = "F:/University Files/Project/tsml/results/";
+    String resultPath = "F:/University Files/Project/Result/";
     String trainFileName;
     String testFileName;
 
@@ -73,10 +76,18 @@ public class MetaNet {
         File train = new File(trainFileName);
         File test = new File(testFileName);
         if (!train.exists() || train.length() == 0) {
-            mergeFiles(classifiersName, datesetName, "train");
+            try {
+                mergeFiles(classifiersName, datesetName, "train", train);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         if (!test.exists() || test.length() == 0) {
-            mergeFiles(classifiersName, datesetName, "test");
+            try {
+                mergeFiles(classifiersName, datesetName, "test", test);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -87,8 +98,9 @@ public class MetaNet {
         File testFile = new File(testFileName);
 
 
-        int labelIndex = 0; //todo read from the first line
-        int numClasses = 0;  //todo
+        Scanner scanner = new Scanner(trainFile);
+        int numClasses = scanner.nextInt();
+        int labelIndex = numClasses * classifiersName.length;
 
 
         RecordReader trainRecordReader = new CSVRecordReader(numLinesToSkip, delimiter);
@@ -130,6 +142,7 @@ public class MetaNet {
         INDArray output = model.output(testData.getFeatures());
         eval.eval(testData.getLabels(), output);
         logResult(eval.stats());
+        //todo save the model
     }
 
     private void logResult(String stats) {
@@ -137,7 +150,42 @@ public class MetaNet {
         //todo save file
     }
 
-    private void mergeFiles(String[] classifiersName, String datesetName, String test) {
-        //todo
+    private void mergeFiles(String[] classifiersName, String datesetName, String path, File out) throws IOException {
+        int size = classifiersName.length;
+        File[] files = new File[size];
+        Scanner[] scanners = new Scanner[size];
+        for (int i = 0; i < size; i++) {
+            files[i] = new File(resultPath + classifiersName[i] + "/Predictions/" + datesetName + "/" + path + "Fold" + (fold - 1) + ".csv");
+            scanners[i] = new Scanner(files[i]);
+        }
+        //reading number of classes and skip first three lines
+        scanners[0].nextLine();
+        scanners[0].nextLine();
+        int numOfClasses = Integer.valueOf(scanners[0].nextLine().split(",")[5]);
+        for (int i = 1; i < size; i++) {
+            scanners[i].nextLine();
+            scanners[i].nextLine();
+            scanners[i].nextLine();
+        }
+
+        out.createNewFile();
+        FileWriter fw = new FileWriter(out);
+        fw.write(numOfClasses);
+        fw.write(System.lineSeparator());
+
+
+        while (scanners[0].hasNextLine()) {
+            StringBuilder sb = new StringBuilder();
+            String[] values = null;
+            for (Scanner scanner : scanners) {
+                values = scanner.nextLine().split(",");
+                for (int i = 3; i < 3 + numOfClasses; i++) {
+                    sb.append(values[i]).append(",");
+                }
+            }
+            sb.append(values[0]); //appending real class in the end
+            fw.write(sb.toString());
+            fw.write(System.lineSeparator());
+        }
     }
 }
