@@ -260,6 +260,7 @@ public class Experiments {
                         exp.debug = this.debug;
                         exp.classifierResultsFileFormat = this.classifierResultsFileFormat;
                         exp.serialiseTrainedClassifier = this.serialiseTrainedClassifier;
+                        exp.forceEvaluation = this.forceEvaluation;
 
                         exps.add(exp);
                     }
@@ -331,6 +332,7 @@ public class Experiments {
             sb.append("\nperformTimingBenchmark: ").append(performTimingBenchmark);
             sb.append("\nserialiseTrainedClassifier: ").append(serialiseTrainedClassifier);
             sb.append("\ndebug: ").append(debug);
+            sb.append("\nforce evaluation: ").append(forceEvaluation);
 
             return sb.toString();
         }
@@ -369,18 +371,18 @@ public class Experiments {
             int folds = 30;
 
 
-            boolean threaded = false;
+            boolean threaded = true;
             if (threaded) {
                 String[] settings = new String[4];
                 settings[0] = "-dp=F:/University Files/Project/UCIContinuous/";//Where to get data
                 settings[1] = "-rp=F:/University Files/Project/Result/";//Where to write results
-                settings[2] = "-gtf=false"; //Whether to generate train files or not
-                settings[3] = "1";
-                folds = 30;
-                String[] classifiers = new String[]{"HC-NEWTEST"};
+                settings[2] = "-gtf=true"; //Whether to generate train files or not
+                settings[3] = "--force=true";
+                folds = 1;
+                String[] classifiers = new String[]{"Logistic", "C45", "SVML", "NN", "MLP"};
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with " + expSettings);
-                String[] probFiles = DatasetLists.tscProblems112;
+                String[] probFiles = {"car"};
                 setupAndRunMultipleExperimentsThreaded(expSettings, classifiers, probFiles, 0, folds);
 
 
@@ -794,7 +796,7 @@ public class Experiments {
         return trainResults;
     }
 
-    public static void serialiseClassifier(ExperimentalArguments expSettings, Classifier classifier) throws FileNotFoundException, IOException {
+    public static void serialiseClassifier(ExperimentalArguments expSettings, Classifier classifier) throws IOException {
         String filename = expSettings.supportingFilePath + expSettings.classifierName + "_" + expSettings.datasetName + "_" + expSettings.foldId + ".ser";
 
         LOGGER.log(Level.FINE, "Attempting classifier serialisation, to " + filename);
