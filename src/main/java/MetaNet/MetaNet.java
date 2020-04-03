@@ -48,17 +48,10 @@ public class MetaNet {
 
     void createData() {
         //run experiments
-        String[] settings = new String[4];
-        settings[0] = "-dp=F:/University Files/Project/UCIContinuous/";//Where to get data
-        settings[1] = "-rp=" + resultPath;//Where to write results
-        settings[2] = "-gtf=true"; //Whether to generate train files or not
-        settings[3] = "1";
-        Experiments.ExperimentalArguments expSettings = null;
-        try {
-            expSettings = new Experiments.ExperimentalArguments(settings);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Experiments.ExperimentalArguments expSettings = new Experiments.ExperimentalArguments();
+        expSettings.dataReadLocation = "F:/University Files/Project/UCIContinuous/";
+        expSettings.resultsWriteLocation = resultPath;
+        expSettings.generateErrorEstimateOnTrainSet = true;
         System.out.println("Threaded experiment with " + expSettings);
         try {
             setupAndRunMultipleExperimentsThreaded(expSettings, classifiersName, new String[]{datesetName}, fold, fold);
@@ -135,12 +128,14 @@ public class MetaNet {
 
 
         for (int i = 0; i < 1000; i++) {
-            model.fit(trainingData);
+            trainIterator.reset();
+            while (trainIterator.hasNext()) {
+                model.fit(trainIterator);
+            }
+
         }
 
-        Evaluation eval = new Evaluation(numClasses);
-        INDArray output = model.output(testData.getFeatures());
-        eval.eval(testData.getLabels(), output);
+        Evaluation eval = model.evaluate(testIterator);
         logResult(eval.stats());
         //todo save the model
     }
@@ -173,7 +168,6 @@ public class MetaNet {
         fw.write(String.valueOf(numOfClasses));
         fw.write(System.lineSeparator());
 
-
         while (scanners[0].hasNextLine()) {
             StringBuilder sb = new StringBuilder();
             String[] values = null;
@@ -187,5 +181,6 @@ public class MetaNet {
             fw.write(sb.toString());
             fw.write(System.lineSeparator());
         }
+        fw.close();
     }
 }

@@ -371,7 +371,7 @@ public class Experiments {
             int folds = 30;
 
 
-            boolean threaded = true;
+            boolean threaded = false;
             if (threaded) {
                 String[] settings = new String[4];
                 settings[0] = "-dp=F:/University Files/Project/UCIContinuous/";//Where to get data
@@ -392,13 +392,13 @@ public class Experiments {
                 settings[0] = "-dp=F:/University Files/Project/UCIContinuous/";//Where to get data
                 settings[1] = "-rp=F:/University Files/Project/Result/";//Where to write results
                 settings[2] = "-gtf=true"; //Whether to generate train files or not
-                settings[3] = "-cn=C45"; //Classifier name
+                settings[3] = "-cn=CAWPE"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
                 System.out.println("Manually set args:");
                 for (String str : settings)
                     System.out.println("\t" + str);
                 System.out.println();
-                String[] probFiles = {"bank"}; //DatasetLists.ReducedUCI;
+                String[] probFiles = {"car"}; //DatasetLists.ReducedUCI;
                 folds = 10;
                 for (String prob : probFiles) {
                     settings[4] = "-dn=" + prob;
