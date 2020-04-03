@@ -71,8 +71,8 @@ public class MetaNet {
         for (String name : classifiersName) {
             sb.append(name).append("_");
         }
-        trainFileName = resultPath + "MetaNet/train/" + sb + datesetName + ".csv";
-        testFileName = resultPath + "MetaNet/test/" + sb + datesetName + ".csv";
+        trainFileName = resultPath + "MetaNet/train/" + sb + datesetName + fold + ".csv";
+        testFileName = resultPath + "MetaNet/test/" + sb + datesetName + fold + ".csv";
         File train = new File(trainFileName);
         File test = new File(testFileName);
         if (!train.exists() || train.length() == 0) {
