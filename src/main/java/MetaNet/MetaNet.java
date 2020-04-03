@@ -170,7 +170,7 @@ public class MetaNet {
 
         out.createNewFile();
         FileWriter fw = new FileWriter(out);
-        fw.write(numOfClasses);
+        fw.write(String.valueOf(numOfClasses));
         fw.write(System.lineSeparator());
 
 
