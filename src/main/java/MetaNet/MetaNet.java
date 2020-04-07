@@ -14,8 +14,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -30,7 +28,7 @@ import static experiments.Experiments.setupAndRunMultipleExperimentsThreaded;
 
 public class MetaNet {
     String[] classifiersName;
-    String datesetName;
+    String datasetName;
     int batchSize;
     int fold;
     String resultPath = "F:/University Files/Project/Result/";
@@ -40,7 +38,7 @@ public class MetaNet {
     public MetaNet(String[] classifiersName, String datesetName, int batchSize, int fold) {
         Arrays.sort(classifiersName);
         this.classifiersName = classifiersName;
-        this.datesetName = datesetName;
+        this.datasetName = datesetName;
         this.batchSize = batchSize;
         this.fold = fold;
 
@@ -54,7 +52,7 @@ public class MetaNet {
         expSettings.generateErrorEstimateOnTrainSet = true;
         System.out.println("Threaded experiment with " + expSettings);
         try {
-            setupAndRunMultipleExperimentsThreaded(expSettings, classifiersName, new String[]{datesetName}, fold, fold);
+            setupAndRunMultipleExperimentsThreaded(expSettings, classifiersName, new String[]{datasetName}, fold - 1, fold);
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -64,20 +62,20 @@ public class MetaNet {
         for (String name : classifiersName) {
             sb.append(name).append("_");
         }
-        trainFileName = resultPath + "MetaNet/train/" + sb + datesetName + fold + ".csv";
-        testFileName = resultPath + "MetaNet/test/" + sb + datesetName + fold + ".csv";
+        trainFileName = resultPath + "MetaNet/train/" + sb + datasetName + fold + ".csv";
+        testFileName = resultPath + "MetaNet/test/" + sb + datasetName + fold + ".csv";
         File train = new File(trainFileName);
         File test = new File(testFileName);
         if (!train.exists() || train.length() == 0) {
             try {
-                mergeFiles(classifiersName, datesetName, "train", train);
+                mergeFiles(classifiersName, datasetName, "train", train);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
         if (!test.exists() || test.length() == 0) {
             try {
-                mergeFiles(classifiersName, datesetName, "test", test);
+                mergeFiles(classifiersName, datasetName, "test", test);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -99,12 +97,10 @@ public class MetaNet {
         RecordReader trainRecordReader = new CSVRecordReader(numLinesToSkip, delimiter);
         trainRecordReader.initialize(new FileSplit(trainFile));
         DataSetIterator trainIterator = new RecordReaderDataSetIterator(trainRecordReader, batchSize, labelIndex, numClasses);
-        DataSet trainingData = trainIterator.next();
 
         RecordReader testRecordReader = new CSVRecordReader(numLinesToSkip, delimiter);
         testRecordReader.initialize(new FileSplit(testFile));
         DataSetIterator testIterator = new RecordReaderDataSetIterator(testRecordReader, batchSize, labelIndex, numClasses);
-        DataSet testData = testIterator.next();
 
 
         //todo optimize

@@ -398,7 +398,7 @@ public class Experiments {
                 for (String str : settings)
                     System.out.println("\t" + str);
                 System.out.println();
-                String[] probFiles = {"car"}; //DatasetLists.ReducedUCI;
+                String[] probFiles = {"abalone"}; //DatasetLists.ReducedUCI;
                 folds = 10;
                 for (String prob : probFiles) {
                     settings[4] = "-dn=" + prob;
