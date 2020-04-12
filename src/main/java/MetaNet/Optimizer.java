@@ -90,6 +90,13 @@ public class Optimizer {
                         //One hyperparameter to infer: layer size
                         .nOut(layerSizeHyperparam)
                         .build())
+//                .addLayer(new DenseLayerSpace.Builder()
+//                        //Fixed values for this layer:
+//                        .nIn(layerSizeHyperparam)
+//                        .activation(Activation.LEAKYRELU)
+//                        //One hyperparameter to infer: layer size
+//                        .nOut(layerSizeHyperparam)
+//                        .build())
                 .addLayer(new OutputLayerSpace.Builder()
                         .nOut(numClasses)
                         .activation(Activation.SOFTMAX)

@@ -32,6 +32,7 @@ public class MetaNet {
     int batchSize;
     int fold;
     String resultPath = "F:/University Files/Project/Result/";
+    String classifiersInString = "";
     String trainFileName;
     String testFileName;
 
@@ -62,6 +63,7 @@ public class MetaNet {
         for (String name : classifiersName) {
             sb.append(name).append("_");
         }
+        classifiersInString = sb.toString();
         trainFileName = resultPath + "MetaNet/train/" + sb + datasetName + fold + ".csv";
         testFileName = resultPath + "MetaNet/test/" + sb + datasetName + fold + ".csv";
         File train = new File(trainFileName);
@@ -82,7 +84,7 @@ public class MetaNet {
         }
     }
 
-    void runExperiment() throws Exception {
+    double runExperiment() throws Exception {
         int numLinesToSkip = 1;
         char delimiter = ',';
         File trainFile = new File(trainFileName);
@@ -104,41 +106,60 @@ public class MetaNet {
 
 
         //todo optimize
+        int midLayerSize = (numClasses + labelIndex) / 2;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(fold)
                 .activation(Activation.TANH)
                 .weightInit(WeightInit.XAVIER)
-                .updater(new Sgd(0.1))
+                .updater(new Sgd(0.03))
                 .l2(1e-4)
                 .list()
-                .layer(new DenseLayer.Builder().nIn(labelIndex).nOut(50)
+                .layer(new DenseLayer.Builder().nIn(labelIndex).nOut(midLayerSize)
                         .build())
                 .layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .activation(Activation.SOFTMAX)
-                        .nIn(50).nOut(numClasses).build())
+                        .nIn(midLayerSize).nOut(numClasses).build())
                 .build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
-        model.setListeners(new ScoreIterationListener(100));
+        model.setListeners(new ScoreIterationListener(10));
 
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             trainIterator.reset();
             while (trainIterator.hasNext()) {
                 model.fit(trainIterator);
             }
-
         }
 
         Evaluation eval = model.evaluate(testIterator);
+        saveModel(model);
         logResult(eval.stats());
-        //todo save the model
+        return eval.accuracy();
     }
 
-    private void logResult(String stats) {
+    private void saveModel(MultiLayerNetwork model) throws IOException {
+        File saveFile = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName);
+        if (saveFile.exists()) {
+            saveFile.delete();
+        }
+        saveFile.mkdirs();
+        saveFile = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName + "/" + fold + ".model");
+        model.save(saveFile);
+    }
+
+    private void logResult(String stats) throws IOException {
         System.out.println(stats);
-        //todo save file
+        File statsFile = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName);
+        if (statsFile.exists()) {
+            statsFile.delete();
+        }
+        statsFile.mkdirs();
+        statsFile = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName + "/stats_" + fold + ".txt");
+        FileWriter fw = new FileWriter(statsFile);
+        fw.write(stats);
+        fw.close();
     }
 
     private void mergeFiles(String[] classifiersName, String datesetName, String path, File out) throws IOException {

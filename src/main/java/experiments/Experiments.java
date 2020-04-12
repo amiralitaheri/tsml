@@ -56,6 +56,8 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
 
+import static experiments.data.DatasetLists.UCIContinuousWithoutBigFour;
+
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is
  * setupAndRunExperiment(ExperimentalArguments expSettings)
@@ -371,7 +373,7 @@ public class Experiments {
             int folds = 30;
 
 
-            boolean threaded = false;
+            boolean threaded = true;
             if (threaded) {
                 String[] settings = new String[4];
                 settings[0] = "-dp=F:/University Files/Project/UCIContinuous/";//Where to get data
@@ -379,10 +381,10 @@ public class Experiments {
                 settings[2] = "-gtf=true"; //Whether to generate train files or not
                 settings[3] = "--force=true";
                 folds = 1;
-                String[] classifiers = new String[]{"Logistic", "C45", "SVML", "NN", "MLP"};
+                String[] classifiers = new String[]{"CAWPE"};
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with " + expSettings);
-                String[] probFiles = {"car"};
+                String[] probFiles = UCIContinuousWithoutBigFour;
                 setupAndRunMultipleExperimentsThreaded(expSettings, classifiers, probFiles, 0, folds);
 
 
