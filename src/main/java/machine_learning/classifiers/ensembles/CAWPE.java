@@ -23,6 +23,7 @@ import machine_learning.classifiers.ensembles.voting.MajorityVote;
 
 import java.io.File;
 
+import machine_learning.classifiers.tuned.TunedXGBoost;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.SingleTestSetEvaluator;
@@ -51,49 +52,48 @@ import machine_learning.classifiers.kNN;
 /**
  * Can be constructed and will be ready for use from the default constructor like any other classifier.
  * Default settings are equivalent to the CAWPE in the paper.
- See exampleCAWPEUsage() for more detailed options on defining different component sets, ensemble schemes, and file handling
-
-
- For examples of file creation and results analysis for reproduction purposes, see
- buildCAWPEPaper_AllResultsForFigure3()
-
-
- CLASSIFICATION SETTINGS:
- Default setup is defined by setupDefaultEnsembleSettings(), i.e:
-   Comps: SVML, MLP, NN, Logistic, C4.5
-   Weight: TrainAcc(4) (train accuracies to the power 4)
-   Vote: MajorityConfidence (summing probability distributions)
-
- For the original settings used in an older version of cote, call setupOriginalHESCASettings(), i.e:
-   Comps: NN, SVML, SVMQ, C4.5, NB, bayesNet, RotF, RandF
-   Weight: TrainAcc
-   Vote: MajorityVote
-
- EXPERIMENTAL USAGE:
- By default will build/trainEstimator members normally, and perform no file reading/writing.
- To turn on file handling of any kind, call
-          setResultsFileLocationParameters(...)
- 1) Can build ensemble and classify from results files of its members, call
-          setBuildIndividualsFromResultsFiles(true)
- 2) If members built from scratch, can write the results files of the individuals with
-          setWriteIndividualsTrainResultsFiles(true)
-          and
-          writeIndividualTestFiles(...) after testing is complete
- 3) And can write the ensemble train/testing files with
-         writeEnsembleTrainTestFiles(...) after testing is complete
-
- There are a bunch of little intricacies if you want to do stuff other than a bog standard run
- Best bet will be to email me for any specific usage questions.
+ * See exampleCAWPEUsage() for more detailed options on defining different component sets, ensemble schemes, and file handling
+ * <p>
+ * <p>
+ * For examples of file creation and results analysis for reproduction purposes, see
+ * buildCAWPEPaper_AllResultsForFigure3()
+ * <p>
+ * <p>
+ * CLASSIFICATION SETTINGS:
+ * Default setup is defined by setupDefaultEnsembleSettings(), i.e:
+ * Comps: SVML, MLP, NN, Logistic, C4.5
+ * Weight: TrainAcc(4) (train accuracies to the power 4)
+ * Vote: MajorityConfidence (summing probability distributions)
+ * <p>
+ * For the original settings used in an older version of cote, call setupOriginalHESCASettings(), i.e:
+ * Comps: NN, SVML, SVMQ, C4.5, NB, bayesNet, RotF, RandF
+ * Weight: TrainAcc
+ * Vote: MajorityVote
+ * <p>
+ * EXPERIMENTAL USAGE:
+ * By default will build/trainEstimator members normally, and perform no file reading/writing.
+ * To turn on file handling of any kind, call
+ * setResultsFileLocationParameters(...)
+ * 1) Can build ensemble and classify from results files of its members, call
+ * setBuildIndividualsFromResultsFiles(true)
+ * 2) If members built from scratch, can write the results files of the individuals with
+ * setWriteIndividualsTrainResultsFiles(true)
+ * and
+ * writeIndividualTestFiles(...) after testing is complete
+ * 3) And can write the ensemble train/testing files with
+ * writeEnsembleTrainTestFiles(...) after testing is complete
+ * <p>
+ * There are a bunch of little intricacies if you want to do stuff other than a bog standard run
+ * Best bet will be to email me for any specific usage questions.
  *
  * @author James Large (james.large@uea.ac.uk)
- *
  */
 
 public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandler {
 
     @Override
     public TechnicalInformation getTechnicalInformation() {
-        TechnicalInformation 	result;
+        TechnicalInformation result;
         result = new TechnicalInformation(TechnicalInformation.Type.ARTICLE);
         result.setValue(TechnicalInformation.Field.AUTHOR, "J. Large, J. Lines and A. Bagnall");
         result.setValue(TechnicalInformation.Field.YEAR, "2019");
@@ -105,8 +105,8 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
         return result;
     }
-    
-    
+
+
     public CAWPE() {
         super();
     }
@@ -121,14 +121,14 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
     @Override //Abstract Ensemble 
     public final void setupDefaultEnsembleSettings() {
         this.ensembleName = "CAWPE";
-        
+
         this.weightingScheme = new TrainAcc(4);
         this.votingScheme = new MajorityConfidence();
         this.transform = null;
-        
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
         cv.setNumFolds(10);
-        this.trainEstimator = cv; 
+        this.trainEstimator = cv;
 
         Classifier[] classifiers = new Classifier[5];
         String[] classifierNames = new String[5];
@@ -143,7 +143,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         classifiers[0] = smo;
         classifierNames[0] = "SVML";
 
-        kNN k=new kNN(100);
+        kNN k = new kNN(100);
         k.setCrossValidate(true);
         k.normalise(false);
         k.setDistanceFunction(new EuclideanDistance());
@@ -158,7 +158,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
         classifiers[4] = new MultilayerPerceptron();
         classifierNames[4] = "MLP";
-        
+
         setClassifiers(classifiers, classifierNames, null);
     }
 
@@ -170,14 +170,14 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      */
     public final void setupDefaultSettings_NoLogistic() {
         this.ensembleName = "CAWPE-NoLogistic";
-        
+
         this.weightingScheme = new TrainAcc(4);
         this.votingScheme = new MajorityConfidence();
-        
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
         cv.setNumFolds(10);
-        this.trainEstimator = cv; 
-        
+        this.trainEstimator = cv;
+
         Classifier[] classifiers = new Classifier[4];
         String[] classifierNames = new String[4];
 
@@ -191,7 +191,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         classifiers[0] = smo;
         classifierNames[0] = "SVML";
 
-        kNN k=new kNN(100);
+        kNN k = new kNN(100);
         k.setCrossValidate(true);
         k.normalise(false);
         k.setDistanceFunction(new EuclideanDistance());
@@ -210,16 +210,16 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
     public final void setupAdvancedSettings() {
         this.ensembleName = "CAWPE-A";
-        
+
         this.weightingScheme = new TrainAcc(4);
         this.votingScheme = new MajorityConfidence();
-        
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
-        cv.setNumFolds(10);
-        this.trainEstimator = cv; 
 
-        Classifier[] classifiers = new Classifier[3];
-        String[] classifierNames = new String[3];
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
+        cv.setNumFolds(10);
+        this.trainEstimator = cv;
+
+        Classifier[] classifiers = new Classifier[5];
+        String[] classifierNames = new String[5];
 
         SMO smo = new SMO();
         smo.turnChecksOff();
@@ -230,14 +230,20 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         smo.setRandomSeed(seed);
         classifiers[0] = smo;
         classifierNames[0] = "SVMQ";
-        RandomForest rf= new RandomForest();
+        RandomForest rf = new RandomForest();
         rf.setNumTrees(500);
         classifiers[1] = rf;
         classifierNames[1] = "RandF";
-        RotationForest rotf=new RotationForest();
+        RotationForest rotf = new RotationForest();
         rotf.setNumIterations(200);
         classifiers[2] = rotf;
         classifierNames[2] = "RotF";
+        MultilayerPerceptron mlp2 = new MultilayerPerceptron();
+        mlp2.setHiddenLayers("a,a");
+        classifiers[3] = mlp2;
+        classifierNames[3] = "MLP2";
+        classifiers[4] = new TunedXGBoost();
+        classifierNames[4] = "XGBoost";
 
         setClassifiers(classifiers, classifierNames, null);
     }
@@ -247,27 +253,26 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
      * Comps: NN, SVML, SVMQ, C4.5, NB,  RotF, RandF, BN,
      * Weight: TrainAcc
      * Vote: MajorityVote
-     *
+     * <p>
      * As used originally in ST_HESCA, COTE.
      * NOTE the original also contained Bayes Net (BN). We have removed it because the classifier crashes
      * unpredictably when discretising features (due to lack of variance in the feature, but not easily detected and
      * dealt with
-     *
      */
     public final void setupOriginalHESCASettings() {
         this.ensembleName = "HESCA";
-        
+
         this.weightingScheme = new TrainAcc();
         this.votingScheme = new MajorityVote();
-        
-        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false); 
+
+        CrossValidationEvaluator cv = new CrossValidationEvaluator(seed, false, false, false, false);
         cv.setNumFolds(10);
-        this.trainEstimator = cv; 
-        int numClassifiers=7;
+        this.trainEstimator = cv;
+        int numClassifiers = 7;
         Classifier[] classifiers = new Classifier[numClassifiers];
         String[] classifierNames = new String[numClassifiers];
 
-        kNN k=new kNN(100);
+        kNN k = new kNN(100);
         k.setCrossValidate(true);
         k.normalise(false);
         k.setDistanceFunction(new EuclideanDistance());
@@ -289,23 +294,23 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         classifiers[3] = svml;
         classifierNames[3] = "SVML";
 
-        SMO svmq =new SMO();
+        SMO svmq = new SMO();
 //Assumes no missing, all real valued and a discrete class variable
         svmq.turnChecksOff();
         PolyKernel kq = new PolyKernel();
         kq.setExponent(2);
         svmq.setKernel(kq);
         svmq.setRandomSeed(seed);
-        classifiers[4] =svmq;
+        classifiers[4] = svmq;
         classifierNames[4] = "SVMQ";
 
-        RandomForest r=new RandomForest();
+        RandomForest r = new RandomForest();
         r.setNumTrees(500);
         r.setSeed(seed);
         classifiers[5] = r;
         classifierNames[5] = "RandF";
 
-        RotationForest rf=new RotationForest();
+        RotationForest rf = new RotationForest();
         rf.setNumIterations(50);
         rf.setSeed(seed);
         classifiers[6] = rf;
@@ -321,8 +326,8 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
     public static void exampleCAWPEUsage() throws Exception {
         String datasetName = "ItalyPowerDemand";
 
-        Instances train = DatasetLoading.loadDataNullable("c:/tsc problems/"+datasetName+"/"+datasetName+"_TRAIN");
-        Instances test = DatasetLoading.loadDataNullable("c:/tsc problems/"+datasetName+"/"+datasetName+"_TEST");
+        Instances train = DatasetLoading.loadDataNullable("c:/tsc problems/" + datasetName + "/" + datasetName + "_TRAIN");
+        Instances test = DatasetLoading.loadDataNullable("c:/tsc problems/" + datasetName + "/" + datasetName + "_TEST");
 
         //Uses predefined default settings. This is the CAWPE classifier built on 'simple' components in the paper, equivalent to setupDefaultEnsembleSettings()
         CAWPE cawpe = new CAWPE();
@@ -333,9 +338,9 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         cawpe.setTransform(null); //back to null for this example
 
         //Setting member classifiers
-        Classifier[] classifiers = new Classifier[] { new kNN() };
-        String [] names = new String[] { "NN" };
-        String [] params = new String[] { "k=1" };
+        Classifier[] classifiers = new Classifier[]{new kNN()};
+        String[] names = new String[]{"NN"};
+        String[] params = new String[]{"k=1"};
         cawpe.setClassifiers(classifiers, names, params); //see setClassifiers(...) javadoc
 
         //Setting ensemble schemes
@@ -366,33 +371,18 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         cawpe.writeEnsembleTrainTestFiles(test.attributeToDoubleArray(test.classIndex()), throwExceptionOnFileParamsNotSetProperly);
     }
 
-    
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
 
     /**
      * This will build all the base classifier results
      *
-     * @param dataHeaders e.g { "UCI", "UCR" }
-     * @param dataPaths e.g { "C:/Data/UCI/", "C:/Data/UCR/" }
-     * @param datasetNames for each datapath, a list of the dataset names located there to be used [archive][dsetnames]
-     * @param classifiers the names of classifiers that can all be found in Experiments.setClassifier(...)
+     * @param dataHeaders   e.g { "UCI", "UCR" }
+     * @param dataPaths     e.g { "C:/Data/UCI/", "C:/Data/UCR/" }
+     * @param datasetNames  for each datapath, a list of the dataset names located there to be used [archive][dsetnames]
+     * @param classifiers   the names of classifiers that can all be found in Experiments.setClassifier(...)
      * @param baseWritePath e.g { "C:/Results/" }
      */
     protected static void buildCAWPEPaper_BuildClassifierResultsFiles(String baseWritePath, String[] dataHeaders, String[] dataPaths,
-                                                            String[][] datasetNames, String[] classifiers, int numFolds) throws Exception {
+                                                                      String[][] datasetNames, String[] classifiers, int numFolds) throws Exception {
         for (int archive = 0; archive < dataHeaders.length; archive++) {
             for (String classifier : classifiers) {
                 if (!Experiments.beQuiet)
@@ -401,7 +391,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                 for (String dset : datasetNames[archive]) {
                     if (!Experiments.beQuiet)
                         System.out.println(dset);
-                    
+
                     for (int fold = 0; fold < numFolds; fold++) {
                           /*1: Problem path args[0]
                             2. Results path args[1]
@@ -413,7 +403,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                             7. boolean whether to checkpoint parameter search for applicable tuned classifiers (true/false)
                             8. integer for specific parameter search (0 indicates ignore this)
                             */
-                        Experiments.main(new String[] { "-dp="+dataPaths[archive], "-rp="+baseWritePath+dataHeaders[archive]+"/", "-cn="+classifier, "-dn="+dset, "-f="+(fold+1), "-gtf=true"});
+                        Experiments.main(new String[]{"-dp=" + dataPaths[archive], "-rp=" + baseWritePath + dataHeaders[archive] + "/", "-cn=" + classifier, "-dn=" + dset, "-f=" + (fold + 1), "-gtf=true"});
                     }
                 }
             }
@@ -421,43 +411,43 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
     }
 
     /**
-     * This method would build all the results files leading up to figure 3 of 
+     * This method would build all the results files leading up to figure 3 of
      * https://link.springer.com/article/10.1007/s10618-019-00638-y,
      * the heterogeneous ensemble comparison on the basic classifiers.
-     * 
+     * <p>
      * It would take a long time to run, almost all of which is comprised of
      * building the base classifiers.
-     *
+     * <p>
      * The experiments and results presented in the paper were distributed on the HPC cluster at UEA,
      * this method is to demonstrate the experimental procedure and to provide a base to copy/edit for
      * full results reproduction of everything in the paper.
-     *
+     * <p>
      * There are also cases that can't be entirely captured neatly in a method like this, despite
      * my best efforts. For example, while we can call matlab code from here to build diagrams for
      * the analysis, the implementation of the DNN requires that to be run separately. Likewise, while
      * a lot of the legwork of analysis is done programmatically, the deeper exploratory analysis
      * cannot really be done automatically.
-     *
+     * <p>
      * Still, the idea of getting as close a possible to being able to reproduce the entirety
      * of a paper's results and statistics in a single function call is nice, especially for a
      * paper as extensive and empirically-driven as CAWPE's.
-     *
+     * <p>
      * For inquiries into specific details of reproduction, best bet is to email us
      * james.large@uea.ac.uk
      * anthony.bagnall@uea.ac.uk
      */
     public static void buildCAWPEPaper_AllResultsForFigure3(String writePathBase) throws Exception {
-        if (writePathBase == null) 
+        if (writePathBase == null)
             writePathBase = "C:/Temp/MCEUpdateTests/CAWPEReprod18/";
-        
+
         //default for unit tests, running on e.g. travis
-        String[] dataHeaders = { "UCI", };
-        String[] dataPaths = { "src/main/java/experiments/data/uci/" };
-        String[][] datasets = { { "hayes-roth", "iris", "teaching" } };
-        String writePathResults =  writePathBase + "Results/";
-        String writePathAnalysis =  writePathBase + "Analysis/";
+        String[] dataHeaders = {"UCI",};
+        String[] dataPaths = {"src/main/java/experiments/data/uci/"};
+        String[][] datasets = {{"hayes-roth", "iris", "teaching"}};
+        String writePathResults = writePathBase + "Results/";
+        String writePathAnalysis = writePathBase + "Analysis/";
         int numFolds = 3;
-        
+
 //        //init, edit the paths for local running ofc
 //        String[] dataHeaders = { "UCI", };
 //        String[] dataPaths = { "C:/UCI Problems/", };
@@ -465,7 +455,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 //        String writePathResults =  writePathBase + "Results/";
 //        String writePathAnalysis =  writePathBase + "Analysis/";
 //        int numFolds = 5;
-        
+
 //        String[] dataHeaders = { "UCI", };
 //        String[] dataPaths = { "Z:/Data/UCIDelgado/", };
 //        String[][] datasets = { DataSets.UCIContinuousFileNames, };
@@ -474,74 +464,73 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 //        int numFolds = 30;
 
         //build the base classifiers
-        String[] baseClassifiers = { "NN", "C45", "MLP", "Logistic", "SVML" };
+        String[] baseClassifiers = {"NN", "C45", "MLP", "Logistic", "SVML"};
         buildCAWPEPaper_BuildClassifierResultsFiles(writePathResults, dataHeaders, dataPaths, datasets, baseClassifiers, numFolds);
 
         //build the ensembles
         String[] ensembleIDsInStorage = {
-            "CAWPE_BasicClassifiers",
-            "EnsembleSelection_BasicClassifiers",
-            "SMLR_BasicClassifiers",
-            "SMLRE_BasicClassifiers",
-            "SMM5_BasicClassifiers",
-            "PickBest_BasicClassifiers",
-            "MajorityVote_BasicClassifiers",
-            "WeightMajorityVote_BasicClassifiers",
-            "RecallCombiner_BasicClassifiers",
-            "NaiveBayesCombiner_BasicClassifiers"
+                "CAWPE_BasicClassifiers",
+                "EnsembleSelection_BasicClassifiers",
+                "SMLR_BasicClassifiers",
+                "SMLRE_BasicClassifiers",
+                "SMM5_BasicClassifiers",
+                "PickBest_BasicClassifiers",
+                "MajorityVote_BasicClassifiers",
+                "WeightMajorityVote_BasicClassifiers",
+                "RecallCombiner_BasicClassifiers",
+                "NaiveBayesCombiner_BasicClassifiers"
         };
 
         String[] ensembleIDsOnFigures = {
-            "CAWPE", "ES", "SMLR", "SMLRE", "SMM5",
-            "PB", "MV", "WMV", "RC", "NBC"
+                "CAWPE", "ES", "SMLR", "SMLRE", "SMM5",
+                "PB", "MV", "WMV", "RC", "NBC"
         };
 
         String pkg = "machine_learning.classifiers.ensembles.";
         Class[] ensembleClasses = {
-            Class.forName(pkg + "CAWPE"),
-            Class.forName(pkg + "EnsembleSelection"),
-            Class.forName(pkg + "stackers.SMLR"),
-            Class.forName(pkg + "stackers.SMLRE"),
-            Class.forName(pkg + "stackers.SMM5"),
-            Class.forName(pkg + "weightedvoters.CAWPE_PickBest"),
-            Class.forName(pkg + "weightedvoters.CAWPE_MajorityVote"),
-            Class.forName(pkg + "weightedvoters.CAWPE_WeightedMajorityVote"),
-            Class.forName(pkg + "weightedvoters.CAWPE_RecallCombiner"),
-            Class.forName(pkg + "weightedvoters.CAWPE_NaiveBayesCombiner"),
+                Class.forName(pkg + "CAWPE"),
+                Class.forName(pkg + "EnsembleSelection"),
+                Class.forName(pkg + "stackers.SMLR"),
+                Class.forName(pkg + "stackers.SMLRE"),
+                Class.forName(pkg + "stackers.SMM5"),
+                Class.forName(pkg + "weightedvoters.CAWPE_PickBest"),
+                Class.forName(pkg + "weightedvoters.CAWPE_MajorityVote"),
+                Class.forName(pkg + "weightedvoters.CAWPE_WeightedMajorityVote"),
+                Class.forName(pkg + "weightedvoters.CAWPE_RecallCombiner"),
+                Class.forName(pkg + "weightedvoters.CAWPE_NaiveBayesCombiner"),
         };
 
         for (int ensemble = 0; ensemble < ensembleIDsInStorage.length; ensemble++)
             buildCAWPEPaper_BuildEnsembleFromResultsFiles(writePathResults, dataHeaders, dataPaths, datasets, baseClassifiers, numFolds, ensembleIDsInStorage[ensemble], ensembleClasses[ensemble]);
 
 
-
         //build the results analysis sheets and figures
         for (int archive = 0; archive < dataHeaders.length; archive++) {
             String analysisName = dataHeaders[archive] + "CAWPEvsHeteroEnsembles_BasicClassifiers";
-            buildCAWPEPaper_BuildResultsAnalysis(writePathResults+dataHeaders[archive]+"/", writePathAnalysis,
-                                       analysisName, ensembleIDsInStorage, ensembleIDsOnFigures, datasets[archive], numFolds);
+            buildCAWPEPaper_BuildResultsAnalysis(writePathResults + dataHeaders[archive] + "/", writePathAnalysis,
+                    analysisName, ensembleIDsInStorage, ensembleIDsOnFigures, datasets[archive], numFolds);
         }
 
         //done!
     }
- 
+
     protected static void buildCAWPEPaper_BuildResultsAnalysis(String resultsReadPath, String analysisWritePath,
-                                       String analysisName, String[] classifiersInStorage, String[] classifiersOnFigs, String[] datasets, int numFolds) throws Exception {
+                                                               String analysisName, String[] classifiersInStorage, String[] classifiersOnFigs, String[] datasets, int numFolds) throws Exception {
         if (!Experiments.beQuiet)
             System.out.println("buildCAWPEPaper_BuildResultsAnalysis");
 
         new MultipleClassifierEvaluation(analysisWritePath, analysisName, numFolds).
-            setTestResultsOnly(true).
+                setTestResultsOnly(true).
 //            setBuildMatlabDiagrams(true).
 //            setUseAccuracyOnly().
-            setBuildMatlabDiagrams(false).
-            setDatasets(datasets).
-            readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
-            runComparison();
+        setBuildMatlabDiagrams(false).
+                setDatasets(datasets).
+                readInClassifiers(classifiersInStorage, classifiersOnFigs, resultsReadPath).
+                runComparison();
     }
 
     protected static void buildCAWPEPaper_BuildEnsembleFromResultsFiles(String baseWritePath, String[] dataHeaders, String[] dataPaths, String[][] datasetNames,
-                                                                String[] baseClassifiers, int numFolds, String ensembleID, Class ensembleClass) throws Exception {
+                                                                        String[] baseClassifiers, int numFolds, String ensembleID, Class ensembleClass) throws Exception {
 
         Instances train = null, test = null, all = null; //UCR has predefined train/test splits, UCI data just comes as a whole, so are loaded/resampled differently
         Instances[] data = null; //however it's loaded/resampled, will eventually end up here, { train, test }
@@ -569,13 +558,13 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                     //this code could ofc be editted to build whatever particular classifiers
                     //you want, instead of using the janky reflection
 
-                    String predictions = writePath+ensembleID+"/Predictions/"+dset+"/";
-                    File f=new File(predictions);
-                    if(!f.exists())
+                    String predictions = writePath + ensembleID + "/Predictions/" + dset + "/";
+                    File f = new File(predictions);
+                    if (!f.exists())
                         f.mkdirs();
 
                     //Check whether fold already exists, if so, dont do it, just quit
-                    if(!CollateResults.validateSingleFoldFile(predictions+"/testFold"+fold+".csv")){
+                    if (!CollateResults.validateSingleFoldFile(predictions + "/testFold" + fold + ".csv")) {
                         if (dataHeaders[archive].equals("UCI"))
                             data = InstanceTools.resampleInstances(all, fold, .5);
                         else if ((dataHeaders[archive].contains("UCR")))
@@ -599,7 +588,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
                         exp.foldId = fold;
                         exp.generateErrorEstimateOnTrainSet = true;
 //                        exp.performTimingBenchmark = true;
-                        Experiments.runExperiment(exp,data[0],data[1],c,predictions);
+                        Experiments.runExperiment(exp, data[0], data[1], c, predictions);
                     }
                 }
             }
@@ -608,68 +597,68 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
 
     public static void test_basic() throws Exception {
         System.out.println("test_basic()");
-        
+
         int seed = 0;
         Instances[] data = DatasetLoading.sampleItalyPowerDemand(seed);
 //        Instances[] data = DatasetLoading.sampleBeef(seed);
-        
+
         StratifiedResamplesEvaluator trainEval = new StratifiedResamplesEvaluator();
         trainEval.setNumFolds(30);
         trainEval.setPropInstancesInTrain(0.5);
         trainEval.setSeed(seed);
-        
+
         CAWPE c = new CAWPE();
         c.setSeed(seed);
 //        c.setTrainEstimator(trainEval);
-        
+
         long t1 = System.currentTimeMillis();
         c.buildClassifier(data[0]);
         t1 = System.currentTimeMillis() - t1;
-        
+
         SingleTestSetEvaluator eval = new SingleTestSetEvaluator();
         eval.setSeed(seed);
         ClassifierResults res = eval.evaluate(c, data[1]);
-        
-        System.out.println("acc="+res.getAcc() 
-                + " buildtime="+t1+"ms");
+
+        System.out.println("acc=" + res.getAcc()
+                + " buildtime=" + t1 + "ms");
         System.out.print("BaseClassifier train accs: ");
         for (EnsembleModule module : c.getModules())
-            System.out.print(module.getModuleName() + ":" +module.trainResults.getAcc() + ", ");
-        System.out.println("");
+            System.out.print(module.getModuleName() + ":" + module.trainResults.getAcc() + ", ");
+        System.out.println();
         System.out.println("IPD_CrossValidation: " + 0.9650145772594753);
         System.out.println("IPD_StratifiedResample: " + 0.9630709426627794);
     }
-    
+
     public static void test_threaded() throws Exception {
         System.out.println("test_threaded()");
-        
+
         int seed = 0;
         Instances[] data = DatasetLoading.sampleItalyPowerDemand(seed);
 //        Instances[] data = DatasetLoading.sampleBeef(seed);
-        
+
         StratifiedResamplesEvaluator trainEval = new StratifiedResamplesEvaluator();
         trainEval.setNumFolds(30);
         trainEval.setPropInstancesInTrain(0.5);
         trainEval.setSeed(seed);
-        
+
         CAWPE c = new CAWPE();
         c.setSeed(seed);
 //        c.setTrainEstimator(trainEval);
         c.enableMultiThreading();
-        
+
         long t1 = System.currentTimeMillis();
         c.buildClassifier(data[0]);
         t1 = System.currentTimeMillis() - t1;
-        
+
         SingleTestSetEvaluator eval = new SingleTestSetEvaluator();
         eval.setSeed(seed);
         ClassifierResults res = eval.evaluate(c, data[1]);
-        System.out.println("acc="+res.getAcc() 
-                + " buildtime="+t1+"ms");
+        System.out.println("acc=" + res.getAcc()
+                + " buildtime=" + t1 + "ms");
         System.out.print("BaseClassifier train accs: ");
         for (EnsembleModule module : c.getModules())
-            System.out.print(module.getModuleName() + ":" +module.trainResults.getAcc() + ", ");
-        System.out.println("");
+            System.out.print(module.getModuleName() + ":" + module.trainResults.getAcc() + ", ");
+        System.out.println();
         System.out.println("IPD_CrossValidation: " + 0.9650145772594753);
         System.out.println("IPD_StratifiedResample: " + 0.9630709426627794);
     }
@@ -677,14 +666,14 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
     public static void main(String[] args) throws Exception {
 //        exampleCAWPEUsage();
         buildCAWPEPaper_AllResultsForFigure3(null);
-        
+
 //        System.out.println(ClassifierTools.testUtils_getIPDAcc(new CAWPE()));
 //        System.out.println(ClassifierTools.testUtils_confirmIPDReproduction(new CAWPE(), 0.9650145772594753, "2019_09_25"));
-        
+
 //        test_basic();
 //        System.out.println("");
 //        test_threaded();
-        
+
         //run:
         //test_basic()
         //acc=0.9650145772594753 buildtime=1646ms
@@ -698,7 +687,7 @@ public class CAWPE extends AbstractEnsemble implements TechnicalInformationHandl
         //IPD_CrossValidation: 0.9650145772594753
         //IPD_StratifiedResample: 0.9630709426627794
         //BUILD SUCCESSFUL (total time: 2 seconds)
-        
+
 //        testBuildingInds(3);
 //        testLoadingInds(2);
     }
