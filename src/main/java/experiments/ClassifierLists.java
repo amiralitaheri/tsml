@@ -458,6 +458,10 @@ public class ClassifierLists {
             case "MLP":
                 c = new MultilayerPerceptron();
                 break;
+            case "MLP2":
+                c = new MultilayerPerceptron();
+                ((MultilayerPerceptron) c).setHiddenLayers("a,a");
+                break;
             case "Logistic":
                 c = new Logistic();
                 break;
