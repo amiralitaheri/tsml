@@ -56,6 +56,7 @@ import tsml.classifiers.EnhancedAbstractClassifier;
 import machine_learning.classifiers.ensembles.SaveableEnsemble;
 import weka.core.Instances;
 
+import static experiments.data.DatasetLists.UCIContinuousFileNames;
 import static experiments.data.DatasetLists.UCIContinuousWithoutBigFour;
 
 /**
@@ -380,11 +381,11 @@ public class Experiments {
                 settings[1] = "-rp=F:/University Files/Project/Result/";//Where to write results
                 settings[2] = "-gtf=true"; //Whether to generate train files or not
                 settings[3] = "--force=true";
-                folds = 1;
-                String[] classifiers = new String[]{"CAWPE"};
+                folds = 30;
+                String[] classifiers = new String[]{"NN"};
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with " + expSettings);
-                String[] probFiles = UCIContinuousWithoutBigFour;
+                String[] probFiles = new String[]{"blood"};
                 setupAndRunMultipleExperimentsThreaded(expSettings, classifiers, probFiles, 0, folds);
 
 
@@ -394,13 +395,13 @@ public class Experiments {
                 settings[0] = "-dp=F:/University Files/Project/UCIContinuous/";//Where to get data
                 settings[1] = "-rp=F:/University Files/Project/Result/";//Where to write results
                 settings[2] = "-gtf=true"; //Whether to generate train files or not
-                settings[3] = "-cn=CAWPE"; //Classifier name
+                settings[3] = "-cn=SVML"; //Classifier name
 //                for(String str:DatasetLists.tscProblems78){
                 System.out.println("Manually set args:");
                 for (String str : settings)
                     System.out.println("\t" + str);
                 System.out.println();
-                String[] probFiles = {"abalone"}; //DatasetLists.ReducedUCI;
+                String[] probFiles = {"blood"}; //DatasetLists.ReducedUCI;
                 folds = 10;
                 for (String prob : probFiles) {
                     settings[4] = "-dn=" + prob;
@@ -557,7 +558,7 @@ public class Experiments {
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
 
         try {
-            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation) {
+            if ((expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists) || expSettings.forceEvaluation) {
                 //Tell the classifier to generate train results if it can do it internally,
                 //otherwise perform the evaluation externally here (e.g. cross validation on the
                 //train data
@@ -580,7 +581,7 @@ public class Experiments {
             //    a) timings, if expSettings.generateErrorEstimateOnTrainSet == false
             //    b) full predictions, if expSettings.generateErrorEstimateOnTrainSet == true
 
-            if (expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists && !expSettings.forceEvaluation)
+            if ((expSettings.generateErrorEstimateOnTrainSet && !trainFoldExists) || expSettings.forceEvaluation)
                 writeResults(expSettings, trainResults, resultsPath + trainFoldFilename, "train");
             LOGGER.log(Level.FINE, "Train estimate written");
 
@@ -614,7 +615,7 @@ public class Experiments {
                 }
                 return new ClassifierResults[]{trainResults, testResults};
             } else {
-                return new ClassifierResults[]{trainResults, null}; //not error, but we dont have a test acc. just returning 0 for now
+                return new ClassifierResults[]{trainResults, null}; //not error, but we don't have a test acc. just returning 0 for now
             }
         } catch (Exception e) {
             //todo expand..
