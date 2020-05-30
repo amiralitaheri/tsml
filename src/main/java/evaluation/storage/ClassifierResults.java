@@ -303,7 +303,8 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
          * and IO compute overhead. Goastler to define
          */
         COMPACT
-    };
+    }
+
     private FileType fileType = FileType.PREDICTIONS;
 
     private String description= ""; //human-friendly optional extra info if wanted.
@@ -607,7 +608,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
     /**
      * Load a classifierresults object from the file at the specified path
      */
-    public ClassifierResults(String filePathAndName) throws FileNotFoundException, Exception {
+    public ClassifierResults(String filePathAndName) throws Exception {
         loadResultsFromFile(filePathAndName);
     }
 
@@ -868,11 +869,11 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
     public void setAcc(double acc) {
         if (printSetAccWarning && firstTimeInSetAcc) {
             System.out.println("*********");
-            System.out.println("");
+            System.out.println();
             System.out.println("ClassifierResults.setAcc(double acc) called, friendly reminder to refactor the code that "
                     + "made this call. If you REALLY dont want this message being printed right now, since e.g. it's messing up your "
                     + "own print formatting, set ClassifierResults.printSetAccWarning to false.");
-            System.out.println("");
+            System.out.println();
             System.out.println("*********");
 
             firstTimeInSetAcc = false;
@@ -889,7 +890,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
         return acc;
     }
     public boolean isAccSet(){
-        return acc<0 ? false: true;
+        return !(acc < 0);
     }
     private void calculateAcc() {
         if (trueClassValues == null || trueClassValues.isEmpty() || trueClassValues.get(0) == -1) {
@@ -1126,8 +1127,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
         assert(trueClassVals.length == distributions.length);
         assert(trueClassVals.length == predTimes.length);
 
-        if (descriptions != null)
-            assert(trueClassVals.length == descriptions.length);
+        assert descriptions == null || (trueClassVals.length == descriptions.length);
 
         for (int i = 0; i < trueClassVals.length; i++) {
             if (descriptions == null)
@@ -1152,8 +1152,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
         assert(predictions.length == distributions.length);
         assert(predictions.length == predTimes.length);
 
-        if (descriptions != null)
-            assert(predictions.length == descriptions.length);
+        assert descriptions == null || (predictions.length == descriptions.length);
 
         for (int i = 0; i < predictions.length; i++) {
             if (descriptions == null)
@@ -1421,11 +1420,11 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
         if(split.length<3) { //no probabilities, no timing. VERY old files will not have them
             if (printDistMissingWarning && firstTimeDistMissing) {
                 System.out.println("*********");
-                System.out.println("");
+                System.out.println();
                 System.out.println("Probability distribution information missing in file. Be aware that certain stats cannot be computed, usability will be diminished. "
                         + "If you know this and dont want this message being printed right now, since e.g. it's messing up your "
                         + "own print formatting, set ClassifierResults.printDistMissingWarning to false.");
-                System.out.println("");
+                System.out.println();
                 System.out.println("*********");
 
                 firstTimeDistMissing = false;
@@ -1535,7 +1534,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
             throw new Exception("No true class value stored, call finaliseResults(double[] trueClassVal)");
 
         if(numInstances()>0 &&(predDistributions.size()==trueClassValues.size()&& predDistributions.size()==predClassValues.size())){
-            StringBuilder sb=new StringBuilder("");
+            StringBuilder sb = new StringBuilder();
 
             for(int i=0;i<numInstances();i++){
                 sb.append(instancePredictionToString(i));
@@ -1564,6 +1563,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
         st.append(generateSecondLine()).append("\n");
         st.append(generateThirdLine()).append("\n");
 
+        st.append(allPerformanceMetricsToString()).append("\n");
         st.append(instancePredictionsToString());
         return st.toString();
     }
@@ -1802,7 +1802,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
         timeUnit = TimeUnit.valueOf(str);
     }
 
-    public void loadResultsFromFile(String path) throws FileNotFoundException, Exception {
+    public void loadResultsFromFile(String path) throws Exception {
 
         try {
             //init
