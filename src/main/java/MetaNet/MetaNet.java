@@ -11,18 +11,19 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 import static experiments.Experiments.setupAndRunMultipleExperimentsThreaded;
 
@@ -51,6 +52,7 @@ public class MetaNet {
         expSettings.dataReadLocation = "F:/University Files/Project/UCIContinuous/";
         expSettings.resultsWriteLocation = resultPath;
         expSettings.generateErrorEstimateOnTrainSet = true;
+//        expSettings.forceEvaluation = true;
         System.out.println("Threaded experiment with " + expSettings);
         try {
             setupAndRunMultipleExperimentsThreaded(expSettings, classifiersName, new String[]{datasetName}, fold - 1, fold);
@@ -107,15 +109,18 @@ public class MetaNet {
 
         //todo optimize
         int midLayerSize = (numClasses + labelIndex) / 2;
+//        int midLayerSize = 500;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(fold)
                 .activation(Activation.TANH)
                 .weightInit(WeightInit.XAVIER)
                 .updater(new Sgd(0.03))
-                .l2(1e-4)
+//                .l2(1e-4)
                 .list()
                 .layer(new DenseLayer.Builder().nIn(labelIndex).nOut(midLayerSize)
                         .build())
+//                .layer(new DenseLayer.Builder().nIn(midLayerSize).nOut(midLayerSize).activation(Activation.LEAKYRELU)
+//                        .build())
                 .layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .activation(Activation.SOFTMAX)
                         .nIn(midLayerSize).nOut(numClasses).build())
@@ -123,19 +128,26 @@ public class MetaNet {
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
-        model.setListeners(new ScoreIterationListener(10));
+        //model.setListeners(new ScoreIterationListener(10));
 
-
-        for (int i = 0; i < 100; i++) {
+        MultiLayerNetwork bestModel = null;
+        double bestAcc = -1;
+        for (int i = 0; i < 1000; i++) {
             trainIterator.reset();
             while (trainIterator.hasNext()) {
                 model.fit(trainIterator);
+                Evaluation eval = model.evaluate(testIterator);
+                if (eval.accuracy() > bestAcc) {
+                    bestModel = model.clone();
+                    bestAcc = eval.accuracy();
+                }
             }
         }
 
-        Evaluation eval = model.evaluate(testIterator);
-        saveModel(model);
+        Evaluation eval = bestModel.evaluate(testIterator);
+        saveModel(bestModel);
         logResult(eval.stats());
+
         return eval.accuracy();
     }
 
