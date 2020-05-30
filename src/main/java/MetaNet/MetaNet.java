@@ -5,37 +5,37 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.evaluation.classification.ConfusionMatrix;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
 
 import static experiments.Experiments.setupAndRunMultipleExperimentsThreaded;
 
 public class MetaNet {
-    String[] classifiersName;
-    String datasetName;
-    int batchSize;
-    int fold;
-    String resultPath = "F:/University Files/Project/Result/";
-    String classifiersInString = "";
-    String trainFileName;
-    String testFileName;
+    private String[] classifiersName;
+    private String datasetName;
+    private int batchSize;
+    private int fold;
+    private String resultPath = "F:/University Files/Project/Result/";
+    private String classifiersInString = "";
+    private String trainFileName;
+    private String testFileName;
 
     public MetaNet(String[] classifiersName, String datesetName, int batchSize, int fold) {
         Arrays.sort(classifiersName);
@@ -136,19 +136,62 @@ public class MetaNet {
             trainIterator.reset();
             while (trainIterator.hasNext()) {
                 model.fit(trainIterator);
-                Evaluation eval = model.evaluate(testIterator);
-                if (eval.accuracy() > bestAcc) {
-                    bestModel = model.clone();
-                    bestAcc = eval.accuracy();
-                }
+            }
+            Evaluation eval = model.evaluate(testIterator);
+            if (eval.accuracy() > bestAcc) {
+                bestModel = model.clone();
+                bestAcc = eval.accuracy();
             }
         }
 
         Evaluation eval = bestModel.evaluate(testIterator);
-        saveModel(bestModel);
-        logResult(eval.stats());
 
+        // calculate negative log likelihood
+        testIterator.reset();
+        int numOfExamples = 0;
+        while (testIterator.hasNext()) {
+            numOfExamples += testIterator.next().numExamples();
+        }
+        testIterator.reset();
+        double nll = bestModel.score(testIterator.next(numOfExamples));
+
+
+        // calculate balancedAccuracy
+        double balancedAccuracy = calculateBalancedAccuracy(eval);
+
+        // calculate Area Under ROC
+        double auc = 0;
+        ROCMultiClass roc = bestModel.evaluateROCMultiClass(testIterator);
+        if (numClasses > 2) {
+            for (int i = 0; i < numClasses; i++) {
+                auc += roc.calculateAUC(i);
+            }
+            auc /= numClasses;
+        } else {
+            if (eval.getConfusionMatrix().getActualTotal(0) > eval.getConfusionMatrix().getActualTotal(1)) {
+                auc = roc.calculateAUC(1);
+            } else {
+                auc = roc.calculateAUC(0);
+            }
+        }
+
+        saveModel(bestModel);
+        logResult(eval.stats(), nll, auc, balancedAccuracy);
         return eval.accuracy();
+    }
+
+    private double calculateBalancedAccuracy(Evaluation eval) {
+        ConfusionMatrix confusionMatrix = eval.getConfusionMatrix();
+        double sumAccuracy = 0;
+        int count = confusionMatrix.getClasses().size();
+        for (int i = 0; i < count; i++) {
+            int sum = 0;
+            for (int j = 0; j < count; j++) {
+                sum += confusionMatrix.getCount(i, j);
+            }
+            sumAccuracy += confusionMatrix.getCount(i, i) * 1.0 / sum;
+        }
+        return sumAccuracy / count;
     }
 
     private void saveModel(MultiLayerNetwork model) throws IOException {
@@ -161,7 +204,7 @@ public class MetaNet {
         model.save(saveFile);
     }
 
-    private void logResult(String stats) throws IOException {
+    private void logResult(String stats, double nll, double auc, double balancedAccuracy) throws IOException {
         System.out.println(stats);
         File statsFile = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName);
         if (statsFile.exists()) {
@@ -171,6 +214,7 @@ public class MetaNet {
         statsFile = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName + "/stats_" + fold + ".txt");
         FileWriter fw = new FileWriter(statsFile);
         fw.write(stats);
+        fw.write("\nnegetive log likelihood :" + nll + "\nAUC:" + auc + "\nbalanced accuracy:" + balancedAccuracy);
         fw.close();
     }
 
@@ -212,4 +256,5 @@ public class MetaNet {
         }
         fw.close();
     }
+
 }
