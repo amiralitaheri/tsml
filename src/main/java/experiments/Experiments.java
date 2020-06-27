@@ -126,7 +126,7 @@ public class Experiments {
             ExperimentalArguments expSettings = new ExperimentalArguments(args);
             if (expSettings.multiThread) {
                 String[] probFiles = UCIContinuousFileNames;
-                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{expSettings.classifierName}, probFiles, 0, expSettings.foldId + 1);
+                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{expSettings.classifierName}, probFiles, 0, expSettings.foldId + 1, expSettings.threadCount);
             } else {
                 setupAndRunExperiment(expSettings);
             }
@@ -271,6 +271,10 @@ public class Experiments {
         @Parameter(names = {"-tem --trainEstimateMethod"}, arity = 1, description = "(String) Defines the method and parameters of the evaluation method used to estimate error on the train set, if --genTrainFiles == true. Current implementation is a hack to get the option in for"
                 + " experiment running in the short term. Give one of 'cv' and 'hov' for cross validation and hold-out validation set respectively, and a number of folds (e.g. cv_10) or train set proportion (e.g. hov_0.7) respectively. Default is a 10 fold cv, i.e. cv_10.")
         public String trainEstimateMethod = "cv_10";
+
+        @Parameter(names = {"-thc", "--threadCount"})
+        public int threadCount = 0;
+
 
         public ExperimentalArguments() {
 
