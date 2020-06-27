@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.HashMap;
 
-import static experiments.data.DatasetLists.UCIContinuousWithoutBigFour;
-
 public class Experiment {
     public static String[] skipDataSets = {"plant-margin", "plant-shape", "plant-texture", "connect-4"};
     public static String[] standard = {
@@ -16,9 +14,9 @@ public class Experiment {
     private static String[] advanceClassifiers = {"MLP2", "XGBoost", "SVMQ", "RandF", "RotF"};
 
     public static void main(String[] args) {
-        String[] classifiers = advanceClassifiers;
+        String[] classifiers = basicClassifiers;
         HashMap<String, Double> results = new HashMap();
-        for (String dataset : UCIContinuousWithoutBigFour) {
+        for (String dataset : new String[]{"bank"}) {
             boolean flag = true;
             for (String s : skipDataSets) {
                 if (dataset.equals(s)) {

@@ -15,49 +15,35 @@
 package experiments;
 
 
-import machine_learning.classifiers.SaveEachParameter;
-import machine_learning.classifiers.tuned.TunedRandomForest;
-import experiments.data.DatasetLists;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.JCommander.Builder;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.SingleSampleEvaluator;
+import evaluation.evaluators.SingleTestSetEvaluator;
+import evaluation.evaluators.StratifiedResamplesEvaluator;
+import evaluation.storage.ClassifierResults;
+import experiments.data.DatasetLoading;
+import machine_learning.classifiers.SaveEachParameter;
+import machine_learning.classifiers.ensembles.SaveableEnsemble;
+import machine_learning.classifiers.tuned.TunedRandomForest;
+import tsml.classifiers.EnhancedAbstractClassifier;
+import tsml.classifiers.ParameterSplittable;
+import tsml.classifiers.TrainTimeContractable;
+import weka.classifiers.Classifier;
+import weka.core.Instances;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import tsml.classifiers.ParameterSplittable;
-import evaluation.evaluators.CrossValidationEvaluator;
-import evaluation.evaluators.SingleSampleEvaluator;
-import tsml.classifiers.TrainTimeContractable;
-import weka.classifiers.Classifier;
-import evaluation.storage.ClassifierResults;
-import evaluation.evaluators.SingleTestSetEvaluator;
-import evaluation.evaluators.StratifiedResamplesEvaluator;
-import experiments.data.DatasetLoading;
-
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
-import tsml.classifiers.EnhancedAbstractClassifier;
-import machine_learning.classifiers.ensembles.SaveableEnsemble;
-import weka.core.Instances;
-
 import static experiments.data.DatasetLists.UCIContinuousFileNames;
-import static experiments.data.DatasetLists.UCIContinuousWithoutBigFour;
 
 /**
  * The main experimental class of the timeseriesclassification codebase. The 'main' method to run is
@@ -110,6 +96,86 @@ public class Experiments {
     //A few 'should be final but leaving them not final just in case' public static settings
     public static int numCVFolds = 10;
 
+    /**
+     * Parses args into an ExperimentalArguments object, then calls setupAndRunExperiment(ExperimentalArguments expSettings).
+     * Calling with the --help argument, or calling with un-parsable parameters, will print a summary of the possible parameters.
+     * <p>
+     * Argument key-value pairs are separated by '='. The 5 basic, always required, arguments are:
+     * Para name (short/long)  |    Example
+     * -dp --dataPath          |    --dataPath=C:/Datasets/
+     * -rp --resultsPath       |    --resultsPath=C:/Results/
+     * -cn --classifierName    |    --classifierName=RandF
+     * -dn --datasetName       |    --datasetName=ItalyPowerDemand
+     * -f  --fold              |    --fold=1
+     * <p>
+     * Use --help to see all the optional parameters, and more information about each of them.
+     * <p>
+     * If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunExperiment(...)
+     * directly, instead of building the String[] args and calling main like a lot of legacy code does.
+     */
+    public static void main(String[] args) throws Exception {
+        //even if all else fails, print the args as a sanity check for cluster.
+        if (!beQuiet) {
+            System.out.println("Raw args:");
+            for (String str : args)
+                System.out.println("\t" + str);
+            System.out.println();
+        }
+
+        if (args.length > 0) {
+            ExperimentalArguments expSettings = new ExperimentalArguments(args);
+            if (expSettings.multiThread) {
+                String[] probFiles = UCIContinuousFileNames;
+                setupAndRunMultipleExperimentsThreaded(expSettings, new String[]{expSettings.classifierName}, probFiles, 0, expSettings.foldId + 1);
+            } else {
+                setupAndRunExperiment(expSettings);
+            }
+        } else {
+            int folds = 30;
+
+
+            boolean threaded = true;
+            if (threaded) {
+                String[] settings = new String[4];
+                settings[0] = "-dp=F:/University Files/Project/UCIContinuous/";//Where to get data
+                settings[1] = "-rp=F:/University Files/Project/Result/";//Where to write results
+                settings[2] = "-gtf=true"; //Whether to generate train files or not
+                settings[3] = "--force=false";
+                folds = 30;
+                String[] classifiers = new String[]{"Logistic"};
+                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+                System.out.println("Threaded experiment with " + expSettings);
+                String[] probFiles = new String[]{"plant-margin", "plant-shape", "plant-texture", "semeion"};
+//                String[] probFiles = UCIContinuousFileNames;
+                setupAndRunMultipleExperimentsThreaded(expSettings, classifiers, probFiles, 0, folds);
+
+
+            } else {//Local run without args, mainly for debugging
+                String[] settings = new String[6];
+                //Location of data set
+                settings[0] = "-dp=F:/University Files/Project/UCIContinuous/";//Where to get data
+                settings[1] = "-rp=F:/University Files/Project/Result/";//Where to write results
+                settings[2] = "-gtf=true"; //Whether to generate train files or not
+                settings[3] = "-cn=Logistic"; //Classifier name
+//                for(String str:DatasetLists.tscProblems78){
+                System.out.println("Manually set args:");
+                for (String str : settings)
+                    System.out.println("\t" + str);
+                System.out.println();
+                String[] probFiles = {"semeion"}; //DatasetLists.ReducedUCI;
+                folds = 30;
+                for (String prob : probFiles) {
+                    settings[4] = "-dn=" + prob;
+                    for (int i = 1; i <= 1; i++) {
+                        settings[5] = "-f=" + i;
+                        ExperimentalArguments expSettings = new ExperimentalArguments(settings);
+                        setupAndRunExperiment(expSettings);
+                    }
+                }
+            }
+        }
+    }
+
     @Parameters(separators = "=")
     public static class ExperimentalArguments implements Runnable {
 
@@ -148,6 +214,9 @@ public class Experiments {
         @Parameter(names = {"-cp", "--checkpointing"}, arity = 1, description = "(boolean) Turns on the usage of checkpointing, if the classifier implements the SaveParameterInfo and/or CheckpointClassifier interfaces. The "
                 + "classifier by default will write its checkpointing files to the same location as the --resultsPath, unless another path is optionally supplied to --checkpointPath.")
         public boolean checkpointing = false;
+
+        @Parameter(names = {"-mt"}, arity = 1)
+        public boolean multiThread = true;
 
         @Parameter(names = {"-sp", "--supportingFilePath"}, description = "(String) Specifies the directory to write any files that may be produced by the classifier if it is a FileProducer. This includes but may not be "
                 + "limited to: parameter evaluations, checkpoints, and logs. By default, these files are written to a generated subdirectory in the same location that the train and testFold[fold] files are written, relative"
@@ -338,80 +407,6 @@ public class Experiments {
             sb.append("\nforce evaluation: ").append(forceEvaluation);
 
             return sb.toString();
-        }
-    }
-
-    /**
-     * Parses args into an ExperimentalArguments object, then calls setupAndRunExperiment(ExperimentalArguments expSettings).
-     * Calling with the --help argument, or calling with un-parsable parameters, will print a summary of the possible parameters.
-     * <p>
-     * Argument key-value pairs are separated by '='. The 5 basic, always required, arguments are:
-     * Para name (short/long)  |    Example
-     * -dp --dataPath          |    --dataPath=C:/Datasets/
-     * -rp --resultsPath       |    --resultsPath=C:/Results/
-     * -cn --classifierName    |    --classifierName=RandF
-     * -dn --datasetName       |    --datasetName=ItalyPowerDemand
-     * -f  --fold              |    --fold=1
-     * <p>
-     * Use --help to see all the optional parameters, and more information about each of them.
-     * <p>
-     * If running locally, it may be easier to build the ExperimentalArguments object yourself and call setupAndRunExperiment(...)
-     * directly, instead of building the String[] args and calling main like a lot of legacy code does.
-     */
-    public static void main(String[] args) throws Exception {
-        //even if all else fails, print the args as a sanity check for cluster.
-        if (!beQuiet) {
-            System.out.println("Raw args:");
-            for (String str : args)
-                System.out.println("\t" + str);
-            System.out.println();
-        }
-
-        if (args.length > 0) {
-            ExperimentalArguments expSettings = new ExperimentalArguments(args);
-            setupAndRunExperiment(expSettings);
-        } else {
-            int folds = 30;
-
-
-            boolean threaded = true;
-            if (threaded) {
-                String[] settings = new String[4];
-                settings[0] = "-dp=F:/University Files/Project/UCIContinuous/";//Where to get data
-                settings[1] = "-rp=F:/University Files/Project/Result/";//Where to write results
-                settings[2] = "-gtf=true"; //Whether to generate train files or not
-                settings[3] = "--force=true";
-                folds = 30;
-                String[] classifiers = new String[]{"NN"};
-                ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                System.out.println("Threaded experiment with " + expSettings);
-                String[] probFiles = new String[]{"blood"};
-                setupAndRunMultipleExperimentsThreaded(expSettings, classifiers, probFiles, 0, folds);
-
-
-            } else {//Local run without args, mainly for debugging
-                String[] settings = new String[6];
-                //Location of data set
-                settings[0] = "-dp=F:/University Files/Project/UCIContinuous/";//Where to get data
-                settings[1] = "-rp=F:/University Files/Project/Result/";//Where to write results
-                settings[2] = "-gtf=true"; //Whether to generate train files or not
-                settings[3] = "-cn=SVML"; //Classifier name
-//                for(String str:DatasetLists.tscProblems78){
-                System.out.println("Manually set args:");
-                for (String str : settings)
-                    System.out.println("\t" + str);
-                System.out.println();
-                String[] probFiles = {"blood"}; //DatasetLists.ReducedUCI;
-                folds = 10;
-                for (String prob : probFiles) {
-                    settings[4] = "-dn=" + prob;
-                    for (int i = 1; i <= folds; i++) {
-                        settings[5] = "-f=" + i;
-                        ExperimentalArguments expSettings = new ExperimentalArguments(settings);
-                        setupAndRunExperiment(expSettings);
-                    }
-                }
-            }
         }
     }
 

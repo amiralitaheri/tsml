@@ -1534,6 +1534,7 @@ public class ClassifierResults implements DebugPrinting, Serializable, MemoryWat
 
     private void instancePredictionsFromScanner(Scanner in) throws Exception {
         double correct = 0;
+        while (!in.nextLine().equals("#")) ;
         while (in.hasNext()) {
             String line = in.nextLine();
             //may be trailing empty lines at the end of the file
