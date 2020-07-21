@@ -60,6 +60,18 @@ public class MetaNet {
             System.out.println(e.getMessage());
         }
 
+        System.out.println(datasetName + fold);
+
+        //check if folders exist
+        File testFolder = new File(resultPath + "MetaNet/test/");
+        File trainFolder = new File(resultPath + "MetaNet/train/");
+        if (!testFolder.exists()) {
+            testFolder.mkdirs();
+        }
+        if (!trainFolder.exists()) {
+            trainFolder.mkdirs();
+        }
+
         //merge output files to one csv
         StringBuilder sb = new StringBuilder();
         for (String name : classifiersName) {
@@ -87,6 +99,13 @@ public class MetaNet {
     }
 
     double runExperiment() throws Exception {
+        File stats = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName + "/stats_" + (fold - 1) + ".txt");
+        if (stats.exists()) {
+            System.out.println(stats.getPath() + " already exist");
+            return -2;
+        } else {
+            System.out.println(stats.getPath() + " started");
+        }
         int numLinesToSkip = 1;
         char delimiter = ',';
         File trainFile = new File(trainFileName);
@@ -176,7 +195,7 @@ public class MetaNet {
         }
 
         saveModel(bestModel);
-        logResult(eval.stats(), nll, auc, balancedAccuracy);
+        logResult(eval.stats(), eval.accuracy(), nll, auc, balancedAccuracy);
         return eval.accuracy();
     }
 
@@ -200,21 +219,21 @@ public class MetaNet {
             saveFile.delete();
         }
         saveFile.mkdirs();
-        saveFile = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName + "/" + fold + ".model");
+        saveFile = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName + "/" + (fold - 1) + ".model");
         model.save(saveFile);
     }
 
-    private void logResult(String stats, double nll, double auc, double balancedAccuracy) throws IOException {
+    private void logResult(String stats, double acc, double nll, double auc, double balancedAccuracy) throws IOException {
         System.out.println(stats);
         File statsFile = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName);
         if (statsFile.exists()) {
             statsFile.delete();
         }
         statsFile.mkdirs();
-        statsFile = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName + "/stats_" + fold + ".txt");
+        statsFile = new File(resultPath + "MetaNet/result/" + classifiersInString + "/" + datasetName + "/stats_" + (fold - 1) + ".txt");
         FileWriter fw = new FileWriter(statsFile);
         fw.write(stats);
-        fw.write("\nnegetive log likelihood :" + nll + "\nAUC:" + auc + "\nbalanced accuracy:" + balancedAccuracy);
+        fw.write("\naccuracy:" + acc + "\nnegetive log likelihood:" + nll + "\nAUC:" + auc + "\nbalanced accuracy:" + balancedAccuracy);
         fw.close();
     }
 
@@ -230,10 +249,8 @@ public class MetaNet {
         scanners[0].nextLine();
         scanners[0].nextLine();
         int numOfClasses = Integer.valueOf(scanners[0].nextLine().split(",")[5]);
-        for (int i = 1; i < size; i++) {
-            scanners[i].nextLine();
-            scanners[i].nextLine();
-            scanners[i].nextLine();
+        for (int i = 0; i < size; i++) {
+            while (!scanners[i].nextLine().equals("#")) ;
         }
 
         out.createNewFile();

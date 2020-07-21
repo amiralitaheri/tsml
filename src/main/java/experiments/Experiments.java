@@ -145,9 +145,9 @@ public class Experiments {
                 String[] classifiers = new String[]{"Logistic"};
                 ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                 System.out.println("Threaded experiment with " + expSettings);
-                String[] probFiles = new String[]{"plant-margin", "plant-shape", "plant-texture", "semeion"};
+                String[] probFiles = new String[]{"plant-texture"};
 //                String[] probFiles = UCIContinuousFileNames;
-                setupAndRunMultipleExperimentsThreaded(expSettings, classifiers, probFiles, 0, folds);
+                setupAndRunMultipleExperimentsThreaded(expSettings, classifiers, probFiles, 0, folds, 3);
 
 
             } else {//Local run without args, mainly for debugging
@@ -162,11 +162,11 @@ public class Experiments {
                 for (String str : settings)
                     System.out.println("\t" + str);
                 System.out.println();
-                String[] probFiles = {"semeion"}; //DatasetLists.ReducedUCI;
+                String[] probFiles = {"plant-shape", "plant-texture"}; //DatasetLists.ReducedUCI;
                 folds = 30;
                 for (String prob : probFiles) {
                     settings[4] = "-dn=" + prob;
-                    for (int i = 1; i <= 1; i++) {
+                    for (int i = 1; i <= folds; i++) {
                         settings[5] = "-f=" + i;
                         ExperimentalArguments expSettings = new ExperimentalArguments(settings);
                         setupAndRunExperiment(expSettings);
